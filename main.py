@@ -1,23 +1,38 @@
 import os
-import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Update
+import uvicorn
 
-# Получаем токен
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
-    raise ValueError("Нет переменной TELEGRAM_BOT_TOKEN в Settings!")
+    raise ValueError("Переменная TELEGRAM_BOT_TOKEN не найдена!")
+
+WEBHOOK_URL = "https://telegram-bot-production-9d73f095.up.railway.app/webhook"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Привет! Бот работает! 🎉")
+    await message.answer("Привет! Бот работает через webhook! 🎉")
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Устанавливаем webhook при старте контейнера (на сервере Railway)
+    print("🔌 Установка webhook...")
+    try:
+        await bot.set_webhook(WEBHOOK_URL)
+        print("✅ Webhook установлен успешно!")
+    except Exception as e:
+        print(f"❌ Ошибка установки webhook: {e}")
+    yield
+    # При остановке контейнера снимаем webhook
+    await bot.delete_webhook()
+
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -28,9 +43,8 @@ async def webhook(request: Request):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "message": "Server is running"}
+    return {"status": "ok", "message": "Server is ready"}
 
 if __name__ == "__main__":
     PORT = int(os.getenv("PORT", 8080))
-    print(f"🚀 Запуск сервера на порту {PORT}...")
     uvicorn.run(app, host="0.0.0.0", port=PORT)
