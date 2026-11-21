@@ -16,7 +16,26 @@ dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Привет! Бот работает через webhook! 🎉")
+    await message.answer("Привет! Бот работает через webhook! 🎉 Напиши /help, чтобы увидеть список команд.")
+
+@dp.message(Command("help"))
+async def cmd_help(message: types.Message):
+    help_text = (
+        "Доступные команды:\n"
+        "/start — приветствие\n"
+        "/help — список команд\n"
+        "(любой текст) — эхо-ответ бота"
+    )
+    await message.answer(help_text)
+
+# Эхо: если это не команда — просто повторяем сообщение
+@dp.message()
+async def echo_handler(message: types.Message):
+    if message.text:
+        await message.answer(f"Я тебя услышал: {message.text}")
+    else:
+        # На случай стикеров/фото и т.п. — можно ничего не делать или ответить иначе
+        pass
 
 app = FastAPI()
 
@@ -31,7 +50,7 @@ async def webhook(request: Request):
 def health():
     return {"status": "ok", "message": "Server is running"}
 
-@app.get("/setup")   # открыть один раз, потом страница больше не нужна
+@app.get("/setup")
 async def setup_webhook():
     try:
         result = await bot.set_webhook(WEBHOOK_URL)
