@@ -1,16 +1,16 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Update
 import uvicorn
 
-app = FastAPI()
-
-# Безопасное получение токена
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise ValueError("Переменная TELEGRAM_BOT_TOKEN не найдена! Проверь Settings → Variables в Railway.")
+
+WEBHOOK_URL = "https://telegram-bot-production-9d73f095.up.railway.app/webhook"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -18,6 +18,15 @@ dp = Dispatcher()
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Бот работает через webhook! 😊")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Бот сам регистрирует webhook при запуске — прямо с сервера Railway
+    await bot.set_webhook(WEBHOOK_URL)
+    yield
+    await bot.delete_webhook()
+
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -31,6 +40,5 @@ def health():
     return {"status": "ok"}
 
 if __name__ == "__main__":
-    # Это критически важная часть: она реально запускает сервер
     PORT = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=PORT)
