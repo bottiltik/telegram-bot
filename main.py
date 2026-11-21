@@ -9,12 +9,14 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise ValueError("Переменная TELEGRAM_BOT_TOKEN не найдена!")
 
+WEBHOOK_URL = "https://telegram-bot-production-9d73f095.up.railway.app/webhook"
+
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Привет! Бот ждёт webhook... 🎉")
+    await message.answer("Привет! Бот работает через webhook! 🎉")
 
 app = FastAPI()
 
@@ -28,6 +30,14 @@ async def webhook(request: Request):
 @app.get("/health")
 def health():
     return {"status": "ok", "message": "Server is running"}
+
+@app.get("/setup")   # открыть один раз, потом страница больше не нужна
+async def setup_webhook():
+    try:
+        result = await bot.set_webhook(WEBHOOK_URL)
+        return {"webhook": result, "url": WEBHOOK_URL}
+    except Exception as e:
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     PORT = int(os.getenv("PORT", 8080))
