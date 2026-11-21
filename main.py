@@ -30,8 +30,8 @@ async def cmd_help(message: types.Message):
         "Доступные команды:\n"
         "/start — приветствие\n"
         "/help — список команд\n"
-        "(любой текст) — эхо-ответ бота"
         "/repeat — повторить сообщение несколько раз (до 20)\n"
+        "(любой текст) — эхо-ответ бота"
     )
     await message.answer(help_text)
 
