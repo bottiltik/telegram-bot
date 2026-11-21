@@ -8,8 +8,9 @@ import uvicorn
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
-    raise ValueError("Переменная TELEGRAM_BOT_TOKEN не найдена!")
+    raise ValueError("Переменная TELEGRAM_BOT_TOKEN не найдена! Проверь Settings → Variables.")
 
+# Твой URL (не меняй, если он не менялся)
 WEBHOOK_URL = "https://telegram-bot-production-9d73f095.up.railway.app/webhook"
 
 bot = Bot(token=TOKEN)
@@ -21,15 +22,14 @@ async def cmd_start(message: types.Message):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Устанавливаем webhook при старте контейнера (на сервере Railway)
-    print("🔌 Установка webhook...")
+    print("🔌 Запуск: пытаемся установить webhook...")
     try:
-        await bot.set_webhook(WEBHOOK_URL)
-        print("✅ Webhook установлен успешно!")
+        result = await bot.set_webhook(WEBHOOK_URL)
+        print(f"✅ Webhook установлен: {result}")
     except Exception as e:
-        print(f"❌ Ошибка установки webhook: {e}")
+        print(f"❌ Ошибка при установке webhook: {e}")
     yield
-    # При остановке контейнера снимаем webhook
+    # При остановке контейнера можно снять webhook (опционально)
     await bot.delete_webhook()
 
 app = FastAPI(lifespan=lifespan)
