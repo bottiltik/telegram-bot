@@ -159,6 +159,14 @@ async def setup_webhook():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/webhook_info")
+async def webhook_info():
+    try:
+        info = await bot.get_webhook_info()
+        return info.model_dump()
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     PORT = int(os.getenv("PORT", 8080))
     print(f"🚀 Сервер запущен на порту {PORT}")
